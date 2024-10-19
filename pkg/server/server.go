@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/helloacai/spindle/pkg/thread"
-	"github.com/helloacai/spindle/pkg/util"
+	. "github.com/helloacai/spindle/pkg/util" // FromHex
 )
 
 const requestIDKey = "request-id"
@@ -40,7 +40,7 @@ func ThreadStream(c *gin.Context) {
 		return
 	}
 
-	uid, err := util.FromHex(t.UIDHex)
+	uid, err := FromHex(t.UIDHex)
 	if err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return

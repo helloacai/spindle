@@ -3,8 +3,9 @@ package thread
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"sync"
+
+	"github.com/pkg/errors"
 
 	. "github.com/helloacai/spindle/pkg/util" // Hex
 )
@@ -22,9 +23,9 @@ func init() {
 type EntryType string
 
 const (
-	EntryType_Request       EntryType = "request"
-	EntryType_InputRequired EntryType = "input_required"
-	EntryType_Complete      EntryType = "complete"
+	EntryType_Request  EntryType = "request"
+	EntryType_Waiting  EntryType = "waiting"
+	EntryType_Complete EntryType = "complete"
 )
 
 type HexByteSlice []byte
@@ -47,15 +48,37 @@ type Thread struct {
 	Context   []*Entry     `json:"context"`
 }
 
-func (t *Thread) Append(typ EntryType, originator []byte, message string) *Thread {
-	lock.Lock()
-	defer lock.Unlock()
+func (t *Thread) notify() {
+	toRemove := []string{}
+	for requestID, listener := range listenerMap[Hex(t.UID)] {
+		if errors.Is(listener.ctx.Err(), context.Canceled) {
+			// remove unused listeners
+			close(listener.ch)
+			toRemove = append(toRemove, requestID)
+			continue
+		}
+		listener.ch <- t.Context[len(t.Context)-1]
+	}
+	for _, requestID := range toRemove {
+		delete(listenerMap[Hex(t.UID)], requestID)
+	}
+}
+
+func (t *Thread) append(typ EntryType, originator []byte, message string) *Thread {
 	t.Context = append(t.Context, &Entry{
 		Type:       typ,
 		Originator: originator,
 		Message:    message,
 	})
 	return t
+}
+
+func (t *Thread) Append(typ EntryType, originator []byte, message string) {
+	lock.Lock()
+	defer lock.Unlock()
+
+	t.append(typ, originator, message)
+	t.notify()
 }
 
 func Request(uid []byte, parentUID []byte, aciUID []byte, requester []byte, requestRef string) *Thread {
@@ -81,23 +104,11 @@ func Request(uid []byte, parentUID []byte, aciUID []byte, requester []byte, requ
 		threadMap[Hex(uid)] = t
 	} else {
 		// update case
-		t.Append(EntryType_Request, requester, requestRef)
+		t.append(EntryType_Request, requester, requestRef)
 	}
 
 	// notify listeners
-	toRemove := []string{}
-	for requestID, listener := range listenerMap[Hex(uid)] {
-		if errors.Is(listener.ctx.Err(), context.Canceled) {
-			// remove unused listeners
-			close(listener.ch)
-			toRemove = append(toRemove, requestID)
-			continue
-		}
-		listener.ch <- t.Context[len(t.Context)-1]
-	}
-	for _, requestID := range toRemove {
-		delete(listenerMap[Hex(uid)], requestID)
-	}
+	t.notify()
 
 	return t
 }
