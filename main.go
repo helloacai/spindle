@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -30,7 +31,25 @@ func (t *Tracer) Enabled() bool {
 	return false
 }
 
+const (
+	substreamsAPIToken = "SUBSTREAMS_API_TOKEN"
+)
+
+func setenv() {
+	if len(os.Getenv(substreamsAPIToken)) == 0 {
+		// try to get token from secrets
+		b, err := os.ReadFile("/etc/secrets/" + substreamsAPIToken)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println("GOT TOKEN: " + string(b))
+		os.Setenv(substreamsAPIToken, string(b))
+	}
+}
+
 func main() {
+	setenv()
+
 	logging.InstantiateLoggers()
 
 	Run(

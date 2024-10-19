@@ -25,6 +25,10 @@ go.work.sum
 .env
 .envrc
 .substreams.env
+secrets
+
+# binary
+spindle
 
 # Added by substreams init# substreams auth file
 # Compiled source files
