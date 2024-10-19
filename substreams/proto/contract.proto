@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+package contract.v1;
+message Events {
+    repeated Acs_Requested acs_requesteds = 1;
+    repeated Acs_ThreadFunded acs_thread_fundeds = 2;
+}
+message Calls {
+    repeated Acs_RequestCall acs_call_requests = 1;
+}
+message EventsCalls {
+    Events events = 1;
+    Calls calls = 2;
+}
+message Acs_Requested {
+    string evt_tx_hash = 1;
+    uint32 evt_index = 2;
+    google.protobuf.Timestamp evt_block_time = 3;
+    uint64 evt_block_number = 4;
+    bytes aci_uid = 5;
+    bytes parent_thread_uid = 6;
+    bytes thread_uid = 7;
+    bytes requester = 8;
+    string request_ref = 9;
+}
+message Acs_ThreadFunded {
+    string evt_tx_hash = 1;
+    uint32 evt_index = 2;
+    google.protobuf.Timestamp evt_block_time = 3;
+    uint64 evt_block_number = 4;
+    bytes thread_uid = 5;
+    uint64 funding_amount = 6;
+    bytes funder = 7;
+}
+  
+message Acs_RequestCall {
+    string call_tx_hash = 1;
+    google.protobuf.Timestamp call_block_time = 2;
+    uint64 call_block_number = 3;
+    uint64 call_ordinal = 4;
+    bool call_success = 5;
+    bytes parent_thread_uid = 6;
+    bytes thread_uid = 7;
+    bytes aci_uid = 8;
+    string request_ref = 9;
+    bytes output_param0 = 10;
+}

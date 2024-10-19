@@ -23,3 +23,13 @@ go.work.sum
 
 # env file
 .env
+.envrc
+.substreams.env
+
+# Added by substreams init# substreams auth file
+# Compiled source files
+target/
+# Sink data when running any sinker
+sink-data/
+# The spkg packed by the subtreams cli
+*.spkg
