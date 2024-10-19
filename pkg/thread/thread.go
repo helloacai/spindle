@@ -24,6 +24,7 @@ type EntryType string
 
 const (
 	EntryType_Request  EntryType = "request"
+	EntryType_Update   EntryType = "update"
 	EntryType_Waiting  EntryType = "waiting"
 	EntryType_Complete EntryType = "complete"
 )
@@ -71,6 +72,21 @@ func (t *Thread) append(typ EntryType, originator []byte, message string) *Threa
 		Message:    message,
 	})
 	return t
+}
+
+func Append(uid []byte, typ EntryType, originator []byte, message string) error {
+	lock.Lock()
+	defer lock.Unlock()
+
+	t, exists := threadMap[Hex(uid)]
+	if !exists {
+		return errors.New("thread " + Hex(uid) + " not found")
+	}
+
+	t.append(typ, originator, message)
+	t.notify()
+
+	return nil
 }
 
 func (t *Thread) Append(typ EntryType, originator []byte, message string) {

@@ -25,7 +25,8 @@ func Run() error {
 			"health": "ok",
 		})
 	})
-	r.GET("/thread/:uid/stream", ThreadStream)
+	r.GET("/thread/:uid/context/stream", StreamThreadContext)
+	r.PUT("/thread/:uid/context", PutThreadContext)
 	return r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 }
 
@@ -33,7 +34,7 @@ type Thread struct {
 	UIDHex string `uri:"uid" binding:"required"`
 }
 
-func ThreadStream(c *gin.Context) {
+func StreamThreadContext(c *gin.Context) {
 	var t Thread
 	if err := c.ShouldBindUri(&t); err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
@@ -59,4 +60,41 @@ func ThreadStream(c *gin.Context) {
 		}
 		return false
 	})
+}
+
+type Entry struct {
+	Type       thread.EntryType `json:"type"`
+	Originator string           `json:"originator"`
+	Message    string           `json:"message"`
+}
+
+func PutThreadContext(c *gin.Context) {
+	var t Thread
+	if err := c.ShouldBindUri(&t); err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+
+	uid, err := FromHex(t.UIDHex)
+	if err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+
+	var json Entry
+	if err := c.ShouldBindJSON(&json); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	originator, err := FromHex(json.Originator)
+	if err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := thread.Append(uid, json.Type, originator, json.Message); err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
 }
