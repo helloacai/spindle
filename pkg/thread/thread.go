@@ -88,7 +88,7 @@ func Request(uid []byte, parentUID []byte, aciUID []byte, requester []byte, requ
 	t, exists := threadMap[Hex(uid)]
 	if !exists {
 		// new case
-		t := &Thread{
+		t = &Thread{
 			UID:       uid,
 			ParentUID: parentUID,
 			AciUID:    aciUID,

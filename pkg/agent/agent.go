@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/helloacai/spindle/pkg/aciregistry"
 	"github.com/helloacai/spindle/pkg/log"
@@ -41,14 +43,14 @@ func Call(ctx context.Context, metadata *aciregistry.Metadata, requestRef string
 	if len(metadata.RequestRoute.QueryParams) > 0 {
 		query := url.Values{}
 		for _, p := range metadata.RequestRoute.QueryParams {
-			query.Add(p.Name, p.Value)
+			query.Add(p.Name, strings.ReplaceAll(p.Value, "$requestRef", requestRef))
 		}
 		agentURL.RawQuery = query.Encode()
 	}
 
 	body := map[string]string{}
 	for _, p := range metadata.RequestRoute.BodyParams {
-		body[p.Name] = p.Value
+		body[p.Name] = strings.ReplaceAll(p.Value, "$requestRef", requestRef)
 	}
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
@@ -67,9 +69,16 @@ func Call(ctx context.Context, metadata *aciregistry.Metadata, requestRef string
 	}
 	defer r.Body.Close()
 	var response Response
-	if err := json.NewDecoder(r.Body).Decode(&response); err != nil {
+	//if err := json.NewDecoder(r.Body).Decode(&response); err != nil {
+	//	return nil, err
+	//}
+	buf := new(strings.Builder)
+	if _, err = io.Copy(buf, r.Body); err != nil {
 		return nil, err
 	}
+	log.Debug().Str("response", buf.String()).Msg("agent response")
+	response.Status = ResponseStatus_Complete
+	response.Message = buf.String()
 
 	return &response, nil
 }

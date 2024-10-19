@@ -13,7 +13,7 @@ use substreams::scalar::BigDecimal;
 
 substreams_ethereum::init!();
 
-const ACS_TRACKED_CONTRACT: [u8; 20] = hex!("d4cd7d0670c1197279ae1adf3507514f41971028");
+const ACS_TRACKED_CONTRACT: [u8; 20] = hex!("Bc0c75001dA750f02A56063c27F478352064831D");
 
 fn map_acs_events(blk: &eth::Block, events: &mut contract::Events) {
     events.acs_requesteds.append(&mut blk

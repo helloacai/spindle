@@ -4,9 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
-	"os"
 
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
@@ -20,8 +18,9 @@ var (
 )
 
 func init() {
-	subgraphURL = fmt.Sprintf("https://gateway.thegraph.com/api/%s/subgraphs/id/qDXHMsvxwV5VTkYz14PYUVY96z5CTicrVEiEK6Gwger",
-		os.Getenv("SUBGRAPH_API_KEY"))
+	//subgraphURL = fmt.Sprintf("https://gateway.thegraph.com/api/%s/subgraphs/id/qDXHMsvxwV5VTkYz14PYUVY96z5CTicrVEiEK6Gwger",
+	//	os.Getenv("SUBGRAPH_API_KEY"))
+	subgraphURL = "https://api.studio.thegraph.com/query/63407/aciregistry-polygon-amoy/version/latest"
 
 	log.Info().Str("subgraph_url", subgraphURL).Msg("subgraph initialized")
 }
@@ -90,7 +89,7 @@ type Registered struct {
 type Metadata struct {
 	Name         string       `json:"name"`
 	Description  string       `json:"description"`
-	Tools        StringMap    `json:"tools"`
+	Tools        StringSlice  `json:"tools"`
 	BaseURL      string       `json:"baseUrl"`
 	RequestRoute RequestRoute `json:"requestRoute"`
 }
@@ -101,18 +100,18 @@ func (m *Metadata) MarshalZerologObject(e *zerolog.Event) {
 	e.
 		Str("name", m.Name).
 		Str("description", m.Description).
-		Object("tools", m.Tools).
+		Array("tools", m.Tools).
 		Str("baseURL", m.BaseURL).
 		Object("requestRoute", &m.RequestRoute)
 }
 
-type StringMap map[string]string
+type StringSlice []string
 
-var _ zerolog.LogObjectMarshaler = StringMap{}
+var _ zerolog.LogArrayMarshaler = StringSlice{}
 
-func (m StringMap) MarshalZerologObject(e *zerolog.Event) {
-	for k, v := range m {
-		e.Str(k, v)
+func (s StringSlice) MarshalZerologArray(a *zerolog.Array) {
+	for _, v := range s {
+		a.Str(v)
 	}
 }
 
@@ -155,6 +154,7 @@ func (s ParamSlice) MarshalZerologArray(a *zerolog.Array) {
 }
 
 func fetchMetadata(_ context.Context, metadataURI string) (*Metadata, error) {
+	log.Debug().Str("pinata_url", pinataURL(metadataURI)).Msg("getting metadata from pinata")
 	r, err := http.Get(pinataURL(metadataURI))
 	if err != nil {
 		return nil, err
