@@ -1,8 +1,8 @@
 FROM golang:1.23.2 AS builder
 
 WORKDIR /build
-COPY go.mod go.sum Makefile main.go pb pkg vendor ./
-RUN go build -mod=vendor -o spindle .
+ADD . ./
+RUN ls -al && go build -mod=vendor -o spindle .
 
 FROM gcr.io/distroless/base-debian12:latest
 
