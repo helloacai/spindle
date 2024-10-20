@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/rs/zerolog"
 
@@ -16,6 +17,12 @@ import (
 )
 
 var agentClient http.Client
+
+func init() {
+	agentClient = http.Client{
+		Timeout: 2 * time.Minute,
+	}
+}
 
 type Response struct {
 	Messages MessageSlice `json:"messages"`
@@ -91,7 +98,7 @@ func Call(ctx context.Context, metadata *aciregistry.Metadata, requestRef string
 		return nil, err
 	}
 
-	log.Debug().Str("url", agentURL.String()).Str("body", string(bodyBytes)).Msg("querying agent")
+	log.Debug().Str("url", agentURL.String()).Str("body", string(bodyBytes)).Str("method", route.Method).Msg("querying agent")
 	req, err := http.NewRequest(route.Method, agentURL.String(), bytes.NewBuffer(bodyBytes))
 	if err != nil {
 		return nil, err
