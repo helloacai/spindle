@@ -16,6 +16,7 @@ import (
 	"go.uber.org/zap"
 
 	v1 "github.com/helloacai/spindle/pb/contract/v1"
+	"github.com/helloacai/spindle/pkg/db"
 	"github.com/helloacai/spindle/pkg/log"
 	"github.com/helloacai/spindle/pkg/manager"
 	"github.com/helloacai/spindle/pkg/server"
@@ -96,7 +97,20 @@ func sinkRunE(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("sink is terminating")
 	})
 
-	cursor := sink.NewBlankCursor() // TODO: save state and restart from cursor?
+	var cursor *sink.Cursor
+	cursorString, err := db.GetCursor()
+	if err != nil {
+		log.Err(err).Msg("error getting cursor")
+		cursor = sink.NewBlankCursor()
+	} else if len(cursorString) == 0 {
+		cursor = sink.NewBlankCursor()
+	} else {
+		cursor, err = sink.NewCursor(cursorString)
+		if err != nil {
+			log.Err(err).Msg("error recovering cursor, using blank cursor")
+			cursor = sink.NewBlankCursor()
+		}
+	}
 
 	// TODO: this is terrible.
 	go func() {
@@ -109,9 +123,17 @@ func sinkRunE(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+var seenBlocks = 0
+
 func handleBlockScopedData(ctx context.Context, data *pbsubstreamsrpc.BlockScopedData, isLive *bool, cursor *sink.Cursor) error {
+	seenBlocks++
+
 	// apparently we get all blocks to this method so we need to skip ones we don't care about
 	if len(data.Output.MapOutput.TypeUrl) == 0 {
+		if seenBlocks > 10 { // save cursor if we've seen a bunch of blocks
+			seenBlocks = 0
+			return db.SaveCursor(cursor.String())
+		}
 		return nil
 	}
 
@@ -124,13 +146,13 @@ func handleBlockScopedData(ctx context.Context, data *pbsubstreamsrpc.BlockScope
 		return err
 	}
 
-	// TODO: save cursor to file if we want to restart from it on crash
-	return nil
+	return db.SaveCursor(cursor.String())
 }
 
 func handleBlockUndoSignal(ctx context.Context, undoSignal *pbsubstreamsrpc.BlockUndoSignal, cursor *sink.Cursor) error {
 	// TODO: rewind if needed
 	log.Info().Str("lastValidBlock", undoSignal.LastValidBlock.String()).
 		Msg("NOT Rewinding changes back to block %s (unimplemented)\n")
-	return nil
+
+	return db.SaveCursor(cursor.String())
 }
