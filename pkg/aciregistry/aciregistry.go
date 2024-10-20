@@ -91,8 +91,8 @@ type Metadata struct {
 	Description string       `json:"description"`
 	Tools       StringSlice  `json:"tools"`
 	BaseURL     string       `json:"baseUrl"`
-	PostRoute   RequestRoute `json:"requestRoute"`
-	PatchRoute  RequestRoute `json:"requestRoute"`
+	PostRoute   RequestRoute `json:"postRoute"`
+	PatchRoute  RequestRoute `json:"patchRoute"`
 }
 
 var _ zerolog.LogObjectMarshaler = &Metadata{}
