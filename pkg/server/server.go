@@ -53,6 +53,7 @@ func StreamThreadContext(c *gin.Context) {
 		return
 	}
 
+	c.Header("access-control-allow-origin", "*")
 	c.Stream(func(w io.Writer) bool {
 		if event, ok := <-ch; ok {
 			c.SSEvent("event", event)
