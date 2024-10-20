@@ -2,7 +2,7 @@
   "generator": "evm-events-calls",
   "state": {
     "name": "spindle",
-    "chainName": "amoy",
+    "chainName": "polygon",
     "contracts": [
       {
         "name": "acs",
@@ -184,8 +184,8 @@
           }
         ],
         "Abi": {},
-        "address": "0xBc0c75001dA750f02A56063c27F478352064831D",
-        "initialBlock": 13355736,
+        "address": "0x5afc57f7f6d6dd560a87ab073ebd09c8e4f4544a",
+        "initialBlock": 63257653,
         "trackFactory": false,
         "factoryCreationEvent": "",
         "factoryCreationEventFieldIdx": null

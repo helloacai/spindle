@@ -14,4 +14,4 @@ COPY --from=builder /build/spindle ./spindle
 
 EXPOSE 8080
 
-ENTRYPOINT ["./spindle", "sink", "amoy.substreams.pinax.network:443", "/app/spindle-v0.1.0.spkg", "map_events_calls"]
+ENTRYPOINT ["./spindle", "sink", "polygon.streamingfast.io:443", "/app/spindle-v0.1.0.spkg", "map_events_calls"]
