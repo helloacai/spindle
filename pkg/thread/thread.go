@@ -160,6 +160,16 @@ func Request(uid []byte, parentUID []byte, aciUID []byte, requester []byte, requ
 	return t, isNew
 }
 
+func Get(ctx context.Context, uid []byte) (*Thread, error) {
+	threadMapLock.RLock()
+	defer threadMapLock.RUnlock()
+	t, exists := threadMap[Hex(uid)]
+	if !exists {
+		return nil, errors.New("thread does not exist")
+	}
+	return t, nil
+}
+
 type Listener struct {
 	ctx context.Context
 	ch  chan *Entry

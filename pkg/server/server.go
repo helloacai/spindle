@@ -27,6 +27,7 @@ func Run() error {
 		})
 	})
 	r.GET("/thread/:uid/context/stream", StreamThreadContext)
+	r.GET("/thread/:uid", GetThread)
 	//r.PUT("/thread/:uid/context", PutThreadContext)
 	return r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 }
@@ -62,6 +63,10 @@ func StreamThreadContext(c *gin.Context) {
 
 	c.Stream(func(w io.Writer) bool {
 		if event, ok := <-ch; ok {
+			if event.Type == thread.EntryType_Debug {
+				logger.Debug().Msg("skipping debug entry")
+				return true
+			}
 			c.SSEvent("event", event)
 			if event.Type != thread.EntryType_Complete {
 				return true
@@ -73,6 +78,27 @@ func StreamThreadContext(c *gin.Context) {
 		logger.Debug().Msg("listener closed")
 		return false
 	})
+}
+
+func GetThread(c *gin.Context) {
+	var param Thread
+	if err := c.ShouldBindUri(&param); err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+
+	uid, err := FromHex(param.UIDHex)
+	if err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+	t, err := thread.Get(c, uid)
+	if err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(200, &t)
 }
 
 //type Entry struct {

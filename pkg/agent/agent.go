@@ -59,7 +59,7 @@ func replaceString(s, requestRef, threadHex string) string {
 	return s
 }
 
-func Call(ctx context.Context, metadata *aciregistry.Metadata, requestRef string, threadUID []byte, isNew bool) (*Response, error) {
+func Call(ctx context.Context, metadata *aciregistry.Metadata, requestRef string, parentThreadUID, threadUID []byte, isNew bool) (*Response, error) {
 	agentURL, err := url.Parse(metadata.BaseURL)
 	if err != nil {
 		return nil, err
@@ -82,6 +82,7 @@ func Call(ctx context.Context, metadata *aciregistry.Metadata, requestRef string
 	}
 
 	body := map[string]string{}
+	body["parentThreadUID"] = Hex(parentThreadUID)
 	for _, p := range route.BodyParams {
 		body[p.Name] = replaceString(p.Value, requestRef, Hex(threadUID))
 	}
