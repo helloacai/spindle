@@ -20,7 +20,7 @@ var (
 func init() {
 	//subgraphURL = fmt.Sprintf("https://gateway.thegraph.com/api/%s/subgraphs/id/qDXHMsvxwV5VTkYz14PYUVY96z5CTicrVEiEK6Gwger",
 	//	os.Getenv("SUBGRAPH_API_KEY"))
-	subgraphURL = "https://api.studio.thegraph.com/query/63407/aciregistry-polygon-amoy/version/latest"
+	subgraphURL = "https://api.studio.thegraph.com/query/63407/aci-registry-polygon/version/latest"
 
 	log.Info().Str("subgraph_url", subgraphURL).Msg("subgraph initialized")
 }
