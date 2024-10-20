@@ -36,6 +36,7 @@ func (s HexByteSlice) MarshalJSON() ([]byte, error) {
 }
 
 type Entry struct {
+	ID         int          `json:"id"`
 	Type       EntryType    `json:"type"`
 	Originator HexByteSlice `json:"originator"`
 	Message    string       `json:"message"`
@@ -67,6 +68,7 @@ func (t *Thread) notify() {
 
 func (t *Thread) append(typ EntryType, originator []byte, message string) *Thread {
 	t.Context = append(t.Context, &Entry{
+		ID:         len(t.Context),
 		Type:       typ,
 		Originator: originator,
 		Message:    message,
@@ -111,6 +113,7 @@ func Request(uid []byte, parentUID []byte, aciUID []byte, requester []byte, requ
 			Requester: requester,
 			Context: []*Entry{
 				{
+					ID:         0,
 					Type:       EntryType_Request,
 					Originator: requester,
 					Message:    requestRef, // TODO: ref -> actual request
