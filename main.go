@@ -164,6 +164,19 @@ func sinkRunE(cmd *cobra.Command, args []string) error {
 			}
 			resp.Body.Close()
 
+			resp, err = http.Get("https://spindle.onrender.com/healthz")
+			if err != nil {
+				log.Err(err).Msg("spindle keepalive error")
+			} else {
+				b, err := io.ReadAll(resp.Body)
+				if err != nil {
+					log.Err(err).Msg("spindle keepalive body error")
+				} else {
+					log.Debug().Msg("spindle keepalive: " + string(b))
+				}
+			}
+			resp.Body.Close()
+
 			time.Sleep(10 * time.Second)
 		}
 	}()
