@@ -26,12 +26,13 @@ func init() {
 type EntryType string
 
 const (
-	EntryType_Request  EntryType = "request"
-	EntryType_Update   EntryType = "update"
-	EntryType_Info     EntryType = "info"
-	EntryType_Debug    EntryType = "debug"
-	EntryType_Waiting  EntryType = "waiting"
-	EntryType_Complete EntryType = "complete"
+	EntryType_Request     EntryType = "request"
+	EntryType_Update      EntryType = "update"
+	EntryType_Info        EntryType = "info"
+	EntryType_Debug       EntryType = "debug"
+	EntryType_Waiting     EntryType = "waiting"
+	EntryType_Complete    EntryType = "complete"
+	EntryType_Subcomplete EntryType = "subcomplete"
 )
 
 type HexByteSlice []byte
@@ -105,7 +106,11 @@ func (t *Thread) append(typ EntryType, originator []byte, message string) *Threa
 		if !exists {
 			log.Err(errors.New("parent " + Hex(t.ParentUID) + " does not exist")).Msg("parent does not exist")
 		} else {
-			parent.append(typ, originator, message)
+			if typ != EntryType_Complete {
+				parent.append(typ, originator, message)
+			} else {
+				parent.append(EntryType_Subcomplete, originator, message)
+			}
 		}
 	}
 
