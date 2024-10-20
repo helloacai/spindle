@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
+	"github.com/helloacai/spindle/pkg/log"
 	"github.com/helloacai/spindle/pkg/thread"
 	. "github.com/helloacai/spindle/pkg/util" // FromHex
 )
@@ -35,11 +36,17 @@ type Thread struct {
 }
 
 func StreamThreadContext(c *gin.Context) {
+	c.Header("access-control-allow-origin", "*")
+	requestID := c.GetString(requestIDKey)
+
 	var t Thread
 	if err := c.ShouldBindUri(&t); err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
+	logger := log.With().Str("request_id", requestID).Str("thread", t.UIDHex).Logger()
+
+	logger.Debug().Msg("stream thread")
 
 	uid, err := FromHex(t.UIDHex)
 	if err != nil {
@@ -47,17 +54,17 @@ func StreamThreadContext(c *gin.Context) {
 		return
 	}
 
-	ch, err := thread.Listen(c, uid, c.GetString(requestIDKey))
+	ch, err := thread.Listen(c, uid, requestID)
 	if err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.Header("access-control-allow-origin", "*")
 	c.Stream(func(w io.Writer) bool {
 		if event, ok := <-ch; ok {
 			c.SSEvent("event", event)
-			return true
+			logger.Debug().Msg("closing listener: thread complete in api")
+			return event.Type != thread.EntryType_Complete
 		}
 		return false
 	})

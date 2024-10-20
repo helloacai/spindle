@@ -60,11 +60,21 @@ func (t *Thread) notify() {
 	for requestID, listener := range listenerMap[Hex(t.UID)] {
 		if errors.Is(listener.ctx.Err(), context.Canceled) {
 			// remove unused listeners
+			log.Debug().Str("request_id", requestID).Str("thread", Hex(t.UID)).Msg("closing listener: context canceled")
 			close(listener.ch)
 			toRemove = append(toRemove, requestID)
 			continue
 		}
+
 		listener.ch <- t.Context[len(t.Context)-1]
+
+		// if the entry type is complete, the stream can end
+		if t.Context[len(t.Context)-1].Type == EntryType_Complete {
+			log.Debug().Str("request_id", requestID).Str("thread", Hex(t.UID)).Msg("closing listener: thread complete")
+			close(listener.ch)
+			toRemove = append(toRemove, requestID)
+			continue
+		}
 	}
 	for _, requestID := range toRemove {
 		delete(listenerMap[Hex(t.UID)], requestID)

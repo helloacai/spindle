@@ -9,6 +9,10 @@ import (
 
 var Logger = zerolog.New(os.Stdout).Output(zerolog.ConsoleWriter{Out: os.Stdout})
 
+func With() zerolog.Context {
+	return Logger.With()
+}
+
 func Info() *zerolog.Event {
 	return Logger.Info()
 }
