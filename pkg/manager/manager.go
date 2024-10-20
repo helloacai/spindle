@@ -41,7 +41,7 @@ func HandleRequested(ctx context.Context, event *v1.Acs_Requested) error {
 	if t.ACIMetadata == nil {
 		aciMetadata, err := aciregistry.Get(ctx, event.AciUid)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "error fetching aci registry metadata")
 		}
 		t.ACIMetadata = aciMetadata
 	}
@@ -50,7 +50,7 @@ func HandleRequested(ctx context.Context, event *v1.Acs_Requested) error {
 	// call the agent API
 	agentResponse, err := agent.Call(ctx, t.ACIMetadata, event.RequestRef, event.ParentThreadUid, event.ThreadUid, isNew)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "error calling agent")
 	}
 	log.Debug().Object("agent_response", agentResponse).Msg("agent responded")
 

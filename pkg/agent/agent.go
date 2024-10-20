@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 
 	"github.com/helloacai/spindle/pkg/aciregistry"
@@ -69,7 +70,7 @@ func replaceString(s, requestRef, threadHex string) string {
 func Call(ctx context.Context, metadata *aciregistry.Metadata, requestRef string, parentThreadUID, threadUID []byte, isNew bool) (*Response, error) {
 	agentURL, err := url.Parse(metadata.BaseURL)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "error parsing url")
 	}
 
 	var route aciregistry.RequestRoute
@@ -95,23 +96,23 @@ func Call(ctx context.Context, metadata *aciregistry.Metadata, requestRef string
 	}
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "error marshalling request body")
 	}
 
 	log.Debug().Str("url", agentURL.String()).Str("body", string(bodyBytes)).Str("method", route.Method).Msg("querying agent")
 	req, err := http.NewRequest(route.Method, agentURL.String(), bytes.NewBuffer(bodyBytes))
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "error crafting http request to agent")
 	}
 
 	r, err := agentClient.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "error doing http request to agent")
 	}
 	defer r.Body.Close()
 	var response Response
 	if err := json.NewDecoder(r.Body).Decode(&response); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "error decoding agent request body")
 	}
 	log.Debug().Object("response", &response).Msg("agent response")
 
