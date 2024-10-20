@@ -178,6 +178,7 @@ type Listener struct {
 func Listen(ctx context.Context, uid []byte, requestID string) (<-chan *Entry, error) {
 	threadMapLock.RLock()
 	if _, exists := threadMap[Hex(uid)]; !exists {
+		threadMapLock.RUnlock()
 		return nil, errors.New("thread does not exist")
 	}
 	threadMapLock.RUnlock()
