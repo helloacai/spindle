@@ -57,6 +57,8 @@ func HandleRequested(ctx context.Context, event *v1.Acs_Requested) error {
 	// log the result in the thread
 	for _, msg := range agentResponse.Messages {
 		switch msg.Status {
+		case agent.Status_Debug:
+			t.Append(thread.EntryType_Debug, event.AciUid, msg.Message)
 		case agent.Status_Info:
 			t.Append(thread.EntryType_Info, event.AciUid, msg.Message)
 		case agent.Status_Waiting:

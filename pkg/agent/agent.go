@@ -47,6 +47,7 @@ func (s MessageSlice) MarshalZerologArray(a *zerolog.Array) {
 type Status string
 
 const (
+	Status_Debug    Status = "debug"
 	Status_Info     Status = "info"
 	Status_Waiting  Status = "waiting"
 	Status_Complete Status = "complete"

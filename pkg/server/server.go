@@ -18,7 +18,7 @@ func Run() error {
 	r := gin.Default()
 
 	r.Use(func(c *gin.Context) {
-		c.Set(requestIDKey, uuid.New())
+		c.Set(requestIDKey, uuid.New().String())
 	})
 
 	r.GET("/healthz", func(c *gin.Context) {
@@ -63,9 +63,14 @@ func StreamThreadContext(c *gin.Context) {
 	c.Stream(func(w io.Writer) bool {
 		if event, ok := <-ch; ok {
 			c.SSEvent("event", event)
-			logger.Debug().Msg("closing listener: thread complete in api")
-			return event.Type != thread.EntryType_Complete
+			if event.Type != thread.EntryType_Complete {
+				return true
+			}
+
+			logger.Debug().Msg("ending listener: thread complete in api")
+			return false
 		}
+		logger.Debug().Msg("listener closed")
 		return false
 	})
 }

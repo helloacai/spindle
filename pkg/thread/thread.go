@@ -13,8 +13,9 @@ import (
 )
 
 var threadMap map[string]*Thread // uid -> thread
-var lock sync.Mutex
+var threadMapLock sync.RWMutex
 var listenerMap map[string]map[string]*Listener // uid -> request id -> Listener
+var listenerMapLock sync.Mutex
 
 func init() {
 	// TODO: this should really be persisted somewhere and not just sitting in memory
@@ -28,6 +29,7 @@ const (
 	EntryType_Request  EntryType = "request"
 	EntryType_Update   EntryType = "update"
 	EntryType_Info     EntryType = "info"
+	EntryType_Debug    EntryType = "debug"
 	EntryType_Waiting  EntryType = "waiting"
 	EntryType_Complete EntryType = "complete"
 )
@@ -111,19 +113,21 @@ func (t *Thread) append(typ EntryType, originator []byte, message string) *Threa
 }
 
 func (t *Thread) Append(typ EntryType, originator []byte, message string) {
-	lock.Lock()
-	defer lock.Unlock()
+	threadMapLock.Lock()
+	defer threadMapLock.Unlock()
 
 	t.append(typ, originator, message)
+
+	listenerMapLock.Lock()
 	t.notify()
+	listenerMapLock.Unlock()
 }
 
 func Request(uid []byte, parentUID []byte, aciUID []byte, requester []byte, requestRef string) (*Thread, bool) {
-	lock.Lock()
-	defer lock.Unlock()
+	threadMapLock.Lock()
+	defer threadMapLock.Unlock()
 
 	isNew := true
-
 	t, exists := threadMap[Hex(uid)]
 	if !exists {
 		// new case
@@ -149,7 +153,9 @@ func Request(uid []byte, parentUID []byte, aciUID []byte, requester []byte, requ
 	}
 
 	// notify listeners
+	listenerMapLock.Lock()
 	t.notify()
+	listenerMapLock.Unlock()
 
 	return t, isNew
 }
@@ -160,12 +166,13 @@ type Listener struct {
 }
 
 func Listen(ctx context.Context, uid []byte, requestID string) (<-chan *Entry, error) {
-	lock.Lock()
-	defer lock.Unlock()
+	threadMapLock.RLock()
 	if _, exists := threadMap[Hex(uid)]; !exists {
 		return nil, errors.New("thread does not exist")
 	}
+	threadMapLock.RUnlock()
 
+	listenerMapLock.Lock()
 	listeners, exists := listenerMap[Hex(uid)]
 	if !exists {
 		listeners = map[string]*Listener{}
@@ -176,10 +183,11 @@ func Listen(ctx context.Context, uid []byte, requestID string) (<-chan *Entry, e
 		ch:  make(chan *Entry),
 	}
 	listeners[requestID] = l
+	listenerMapLock.Unlock()
 
 	go func() {
-		lock.Lock()
-		defer lock.Unlock()
+		threadMapLock.RLock()
+		defer threadMapLock.RUnlock()
 		// throw all existing entries onto the channel
 		for _, entry := range threadMap[Hex(uid)].Context {
 			l.ch <- entry
