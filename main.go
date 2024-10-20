@@ -3,7 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -116,6 +119,52 @@ func sinkRunE(cmd *cobra.Command, args []string) error {
 	go func() {
 		if err := server.Run(); err != nil {
 			panic(err)
+		}
+	}()
+
+	// TODO: this is also terrible. workaround to make render not shut down our instances
+	go func() {
+		for {
+			resp, err := http.Get("https://yelpagent.onrender.com")
+			if err != nil {
+				log.Err(err).Msg("YelpAgent keepalive error")
+			} else {
+				b, err := io.ReadAll(resp.Body)
+				if err != nil {
+					log.Err(err).Msg("YelpAgent keepalive body error")
+				} else {
+					log.Debug().Msg("YelpAgent keepalive: " + string(b))
+				}
+			}
+			resp.Body.Close()
+
+			resp, err = http.Get("https://coordinatingagent.onrender.com")
+			if err != nil {
+				log.Err(err).Msg("CoordinatingAgent keepalive error")
+			} else {
+				b, err := io.ReadAll(resp.Body)
+				if err != nil {
+					log.Err(err).Msg("CoordinatingAgent keepalive body error")
+				} else {
+					log.Debug().Msg("CoordinatingAgent keepalive: " + string(b))
+				}
+			}
+			resp.Body.Close()
+
+			resp, err = http.Get("https://gcalagent.onrender.com")
+			if err != nil {
+				log.Err(err).Msg("GCalAgent keepalive error")
+			} else {
+				b, err := io.ReadAll(resp.Body)
+				if err != nil {
+					log.Err(err).Msg("GCalAgent keepalive body error")
+				} else {
+					log.Debug().Msg("GCalAgent keepalive: " + string(b))
+				}
+			}
+			resp.Body.Close()
+
+			time.Sleep(10 * time.Second)
 		}
 	}()
 
