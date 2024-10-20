@@ -199,6 +199,17 @@ func Get(ctx context.Context, uid []byte) (*Thread, error) {
 	return t, nil
 }
 
+func GetByParentAndAci(ctx context.Context, parentUID, aciUID []byte) (*Thread, error) {
+	threadMapLock.RLock()
+	defer threadMapLock.RUnlock()
+	for _, t := range threadMap {
+		if Hex(t.ParentUID) == Hex(parentUID) && Hex(t.AciUID) == Hex(aciUID) {
+			return t, nil
+		}
+	}
+	return nil, errors.New("thread not found")
+}
+
 type Listener struct {
 	ctx context.Context
 	ch  chan *Entry

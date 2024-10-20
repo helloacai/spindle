@@ -28,6 +28,7 @@ func Run() error {
 	})
 	r.GET("/thread/:uid/context/stream", StreamThreadContext)
 	r.GET("/thread/:uid", GetThread)
+	r.GET("/subthread/:parent_uid/:aci_uid", GetSubthread)
 	return r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 }
 
@@ -94,6 +95,37 @@ func GetThread(c *gin.Context) {
 	t, err := thread.Get(c, uid)
 	if err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(200, &t)
+}
+
+type Subthread struct {
+	ParentUIDHex string `uri:"parent_uid" binding:"required"`
+	AciUIDHex    string `uri:"aci_uid" binding:"required"`
+}
+
+func GetSubthread(c *gin.Context) {
+	var param Subthread
+	if err := c.ShouldBindUri(&param); err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+
+	parentUID, err := FromHex(param.ParentUIDHex)
+	if err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+	aciUID, err := FromHex(param.AciUIDHex)
+	if err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+	t, err := thread.GetByParentAndAci(c, parentUID, aciUID)
+	if err != nil {
+		c.JSON(404, gin.H{"error": err.Error()})
 		return
 	}
 
