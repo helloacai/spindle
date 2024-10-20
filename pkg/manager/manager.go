@@ -45,7 +45,7 @@ func HandleRequested(ctx context.Context, event *v1.Acs_Requested) error {
 	log.Debug().Object("aci_metadata", aciMetadata).Msg("fetched aci metadata")
 
 	// call the agent API
-	agentResponse, err := agent.Call(ctx, aciMetadata, event.RequestRef)
+	agentResponse, err := agent.Call(ctx, aciMetadata, event.RequestRef, event.ThreadUid)
 	if err != nil {
 		return err
 	}

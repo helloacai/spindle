@@ -9,9 +9,11 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/rs/zerolog"
+
 	"github.com/helloacai/spindle/pkg/aciregistry"
 	"github.com/helloacai/spindle/pkg/log"
-	"github.com/rs/zerolog"
+	. "github.com/helloacai/spindle/pkg/util"
 )
 
 var agentClient http.Client
@@ -34,7 +36,13 @@ const (
 	ResponseStatus_Complete = "complete"
 )
 
-func Call(ctx context.Context, metadata *aciregistry.Metadata, requestRef string) (*Response, error) {
+func replaceString(s, requestRef, threadHex string) string {
+	s = strings.ReplaceAll(s, "$requestRef", requestRef)
+	s = strings.ReplaceAll(s, "$threadUID", threadHex)
+	return s
+}
+
+func Call(ctx context.Context, metadata *aciregistry.Metadata, requestRef string, threadUID []byte) (*Response, error) {
 	agentURL, err := url.Parse(metadata.BaseURL)
 	if err != nil {
 		return nil, err
@@ -43,14 +51,14 @@ func Call(ctx context.Context, metadata *aciregistry.Metadata, requestRef string
 	if len(metadata.RequestRoute.QueryParams) > 0 {
 		query := url.Values{}
 		for _, p := range metadata.RequestRoute.QueryParams {
-			query.Add(p.Name, strings.ReplaceAll(p.Value, "$requestRef", requestRef))
+			query.Add(p.Name, replaceString(p.Value, requestRef, Hex(threadUID)))
 		}
 		agentURL.RawQuery = query.Encode()
 	}
 
 	body := map[string]string{}
 	for _, p := range metadata.RequestRoute.BodyParams {
-		body[p.Name] = strings.ReplaceAll(p.Value, "$requestRef", requestRef)
+		body[p.Name] = replaceString(p.Value, requestRef, Hex(threadUID))
 	}
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
