@@ -35,17 +35,20 @@ func HandleRequested(ctx context.Context, event *v1.Acs_Requested) error {
 		Msg("[event] requested")
 
 	// log the request in the thread
-	t := thread.Request(event.ThreadUid, event.ParentThreadUid, event.AciUid, event.Requester, event.RequestRef)
+	t, isNew := thread.Request(event.ThreadUid, event.ParentThreadUid, event.AciUid, event.Requester, event.RequestRef)
 
 	// fetch the aci metadata
-	aciMetadata, err := aciregistry.Get(ctx, event.AciUid)
-	if err != nil {
-		return err
+	if t.ACIMetadata == nil {
+		aciMetadata, err := aciregistry.Get(ctx, event.AciUid)
+		if err != nil {
+			return err
+		}
+		t.ACIMetadata = aciMetadata
 	}
-	log.Debug().Object("aci_metadata", aciMetadata).Msg("fetched aci metadata")
+	log.Debug().Object("aci_metadata", t.ACIMetadata).Msg("fetched aci metadata")
 
 	// call the agent API
-	agentResponse, err := agent.Call(ctx, aciMetadata, event.RequestRef, event.ThreadUid)
+	agentResponse, err := agent.Call(ctx, t.ACIMetadata, event.RequestRef, event.ThreadUid, isNew)
 	if err != nil {
 		return err
 	}

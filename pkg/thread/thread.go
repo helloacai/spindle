@@ -7,6 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/helloacai/spindle/pkg/aciregistry"
 	. "github.com/helloacai/spindle/pkg/util" // Hex
 )
 
@@ -25,6 +26,7 @@ type EntryType string
 const (
 	EntryType_Request  EntryType = "request"
 	EntryType_Update   EntryType = "update"
+	EntryType_Info     EntryType = "info"
 	EntryType_Waiting  EntryType = "waiting"
 	EntryType_Complete EntryType = "complete"
 )
@@ -48,6 +50,8 @@ type Thread struct {
 	AciUID    HexByteSlice `json:"aciUID"`
 	Requester HexByteSlice `json:"requester"`
 	Context   []*Entry     `json:"context"`
+
+	ACIMetadata *aciregistry.Metadata `json:"-"`
 }
 
 func (t *Thread) notify() {
@@ -76,21 +80,6 @@ func (t *Thread) append(typ EntryType, originator []byte, message string) *Threa
 	return t
 }
 
-func Append(uid []byte, typ EntryType, originator []byte, message string) error {
-	lock.Lock()
-	defer lock.Unlock()
-
-	t, exists := threadMap[Hex(uid)]
-	if !exists {
-		return errors.New("thread " + Hex(uid) + " not found")
-	}
-
-	t.append(typ, originator, message)
-	t.notify()
-
-	return nil
-}
-
 func (t *Thread) Append(typ EntryType, originator []byte, message string) {
 	lock.Lock()
 	defer lock.Unlock()
@@ -99,9 +88,11 @@ func (t *Thread) Append(typ EntryType, originator []byte, message string) {
 	t.notify()
 }
 
-func Request(uid []byte, parentUID []byte, aciUID []byte, requester []byte, requestRef string) *Thread {
+func Request(uid []byte, parentUID []byte, aciUID []byte, requester []byte, requestRef string) (*Thread, bool) {
 	lock.Lock()
 	defer lock.Unlock()
+
+	isNew := true
 
 	t, exists := threadMap[Hex(uid)]
 	if !exists {
@@ -123,13 +114,14 @@ func Request(uid []byte, parentUID []byte, aciUID []byte, requester []byte, requ
 		threadMap[Hex(uid)] = t
 	} else {
 		// update case
+		isNew = false
 		t.append(EntryType_Request, requester, requestRef)
 	}
 
 	// notify listeners
 	t.notify()
 
-	return t
+	return t, isNew
 }
 
 type Listener struct {

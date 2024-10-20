@@ -87,11 +87,12 @@ type Registered struct {
 }
 
 type Metadata struct {
-	Name         string       `json:"name"`
-	Description  string       `json:"description"`
-	Tools        StringSlice  `json:"tools"`
-	BaseURL      string       `json:"baseUrl"`
-	RequestRoute RequestRoute `json:"requestRoute"`
+	Name        string       `json:"name"`
+	Description string       `json:"description"`
+	Tools       StringSlice  `json:"tools"`
+	BaseURL     string       `json:"baseUrl"`
+	PostRoute   RequestRoute `json:"requestRoute"`
+	PatchRoute  RequestRoute `json:"requestRoute"`
 }
 
 var _ zerolog.LogObjectMarshaler = &Metadata{}
@@ -102,7 +103,8 @@ func (m *Metadata) MarshalZerologObject(e *zerolog.Event) {
 		Str("description", m.Description).
 		Array("tools", m.Tools).
 		Str("baseURL", m.BaseURL).
-		Object("requestRoute", &m.RequestRoute)
+		Object("postRoute", &m.PostRoute).
+		Object("patchRoute", &m.PatchRoute)
 }
 
 type StringSlice []string
