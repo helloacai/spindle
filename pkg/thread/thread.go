@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/helloacai/spindle/pkg/aciregistry"
+	"github.com/helloacai/spindle/pkg/log"
 	. "github.com/helloacai/spindle/pkg/util" // Hex
 )
 
@@ -68,6 +69,15 @@ func (t *Thread) notify() {
 	for _, requestID := range toRemove {
 		delete(listenerMap[Hex(t.UID)], requestID)
 	}
+
+	if t.ParentUID != nil {
+		parent, exists := threadMap[Hex(t.ParentUID)]
+		if !exists {
+			log.Err(errors.New("parent " + Hex(t.ParentUID) + " does not exist")).Msg("parent does not exist")
+		} else {
+			parent.notify()
+		}
+	}
 }
 
 func (t *Thread) append(typ EntryType, originator []byte, message string) *Thread {
@@ -77,6 +87,16 @@ func (t *Thread) append(typ EntryType, originator []byte, message string) *Threa
 		Originator: originator,
 		Message:    message,
 	})
+
+	if t.ParentUID != nil {
+		parent, exists := threadMap[Hex(t.ParentUID)]
+		if !exists {
+			log.Err(errors.New("parent " + Hex(t.ParentUID) + " does not exist")).Msg("parent does not exist")
+		} else {
+			parent.append(typ, originator, message)
+		}
+	}
+
 	return t
 }
 

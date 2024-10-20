@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -19,22 +18,38 @@ import (
 var agentClient http.Client
 
 type Response struct {
-	Status  ResponseStatus `json:"status"`
-	Message string         `json:"message"`
+	Messages MessageSlice `json:"messages"`
 }
 
 func (r *Response) MarshalZerologObject(e *zerolog.Event) {
-	e.
-		Str("status", string(r.Status)).
-		Str("message", r.Message)
+	e.Array("messages", r.Messages)
 }
 
-type ResponseStatus string
+type Message struct {
+	Status  Status `json:"status"`
+	Message string `json:"message"`
+}
+
+func (m *Message) MarshalZerologObject(e *zerolog.Event) {
+	e.
+		Str("status", string(m.Status)).
+		Str("message", m.Message)
+}
+
+type MessageSlice []Message
+
+func (s MessageSlice) MarshalZerologArray(a *zerolog.Array) {
+	for _, msg := range s {
+		a.Object(&msg)
+	}
+}
+
+type Status string
 
 const (
-	ResponseStatus_Info     = "info"
-	ResponseStatus_Waiting  = "waiting"
-	ResponseStatus_Complete = "complete"
+	Status_Info     Status = "info"
+	Status_Waiting  Status = "waiting"
+	Status_Complete Status = "complete"
 )
 
 func replaceString(s, requestRef, threadHex string) string {
@@ -86,16 +101,10 @@ func Call(ctx context.Context, metadata *aciregistry.Metadata, requestRef string
 	}
 	defer r.Body.Close()
 	var response Response
-	//if err := json.NewDecoder(r.Body).Decode(&response); err != nil {
-	//	return nil, err
-	//}
-	buf := new(strings.Builder)
-	if _, err = io.Copy(buf, r.Body); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&response); err != nil {
 		return nil, err
 	}
-	log.Debug().Str("response", buf.String()).Msg("agent response")
-	response.Status = ResponseStatus_Complete
-	response.Message = buf.String()
+	log.Debug().Object("response", &response).Msg("agent response")
 
 	return &response, nil
 }

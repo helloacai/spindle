@@ -55,13 +55,17 @@ func HandleRequested(ctx context.Context, event *v1.Acs_Requested) error {
 	log.Debug().Object("agent_response", agentResponse).Msg("agent responded")
 
 	// log the result in the thread
-	switch agentResponse.Status {
-	case agent.ResponseStatus_Waiting:
-		t.Append(thread.EntryType_Waiting, event.AciUid, agentResponse.Message)
-	case agent.ResponseStatus_Complete:
-		t.Append(thread.EntryType_Complete, event.AciUid, agentResponse.Message)
-	default:
-		return errors.New("invalid agent response status: " + string(agentResponse.Status))
+	for _, msg := range agentResponse.Messages {
+		switch msg.Status {
+		case agent.Status_Info:
+			t.Append(thread.EntryType_Info, event.AciUid, msg.Message)
+		case agent.Status_Waiting:
+			t.Append(thread.EntryType_Waiting, event.AciUid, msg.Message)
+		case agent.Status_Complete:
+			t.Append(thread.EntryType_Complete, event.AciUid, msg.Message)
+		default:
+			return errors.New("invalid agent response status: " + string(msg.Status))
+		}
 	}
 
 	return nil

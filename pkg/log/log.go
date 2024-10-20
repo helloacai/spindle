@@ -17,6 +17,10 @@ func Debug() *zerolog.Event {
 	return Logger.Info()
 }
 
+func Err(err error) *zerolog.Event {
+	return Logger.Err(err)
+}
+
 func WithContext(ctx context.Context) context.Context {
 	return Logger.WithContext(ctx)
 }
