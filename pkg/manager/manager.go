@@ -89,7 +89,7 @@ func Handle(ctx context.Context, eventsCalls *v1.EventsCalls) error {
 			continue
 		}
 		if err := HandleRequest(ctx, call); err != nil {
-			return err
+			return errors.Wrap(err, "error handling request")
 		}
 	}
 
@@ -98,7 +98,7 @@ func Handle(ctx context.Context, eventsCalls *v1.EventsCalls) error {
 			continue
 		}
 		if err := HandleRequested(ctx, event); err != nil {
-			return err
+			return errors.Wrap(err, "error handling requested")
 		}
 	}
 
@@ -107,7 +107,7 @@ func Handle(ctx context.Context, eventsCalls *v1.EventsCalls) error {
 			continue
 		}
 		if err := HandleThreadFunded(ctx, event); err != nil {
-			return err
+			return errors.Wrap(err, "error handling thread funded")
 		}
 	}
 
