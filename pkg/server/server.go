@@ -14,7 +14,16 @@ import (
 
 const requestIDKey = "request-id"
 
-func Run() error {
+func Start() {
+	// TODO: this is terrible. need to add better shutdown
+	go func() {
+		if err := run(); err != nil {
+			panic(err)
+		}
+	}()
+}
+
+func run() error {
 	r := gin.Default()
 
 	r.Use(func(c *gin.Context) {
@@ -22,6 +31,8 @@ func Run() error {
 	})
 
 	r.GET("/healthz", func(c *gin.Context) {
+		//nolint
+		thread.Get(c, []byte{0}) // no need to check return value -- we're just confirming we're not deadlocked
 		c.JSON(http.StatusOK, gin.H{
 			"health": "ok",
 		})
